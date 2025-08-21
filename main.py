@@ -6,7 +6,10 @@ from pathlib import Path
 
 import instaloader
 from instaloader.exceptions import TwoFactorAuthRequiredException, BadCredentialsException, ConnectionException
-from PIL import Image
+from moviepy.editor import VideoFileClip, CompositeVideoClip, ImageClip
+from PIL import Image, UnidentifiedImageError
+from moviepy.editor import VideoFileClip, CompositeVideoClip, ImageClip
+import numpy as np
 
 # ================= CONFIGURAÇÃO =================
 load_dotenv()
@@ -19,8 +22,8 @@ MARGEM_PX = 30
 FATOR_LARGURA_LOGO = 1 / 3
 
 USUARIOS = [
-    "dronesguanambi",
     "educa_drones",
+    "dronesguanambi",
     "ceteia_ifbaiano"
 ]
 # ==================================================
@@ -31,23 +34,6 @@ def carregar_logo():
         exit(1)
     return Image.open(LOGO_PATH).convert("RGBA")
 
-def aplicar_logo(imagem_path: Path, logo_img: Image.Image, saida_path: Path):
-    try:
-        base = Image.open(imagem_path).convert("RGBA")
-        largura_logo = max(1, int(base.width * FATOR_LARGURA_LOGO))
-        altura_logo = int(largura_logo * (logo_img.height / logo_img.width))
-        logo_resized = logo_img.resize((largura_logo, altura_logo))
-
-        pos_x = max(0, base.width - largura_logo - MARGEM_PX)
-        pos_y = max(0, base.height - altura_logo - MARGEM_PX)
-
-        base.paste(logo_resized, (pos_x, pos_y), logo_resized)
-        saida_path.parent.mkdir(parents=True, exist_ok=True)
-        saida_path = saida_path.with_suffix(".png")  # força salvar como PNG
-        base.save(saida_path, "PNG")
-        print(f"✅ Logo aplicada: {saida_path}")
-    except Exception as e:
-        print(f"⚠️ Erro ao aplicar logo em {imagem_path}: {e}")
 
 def login_instagram(L: instaloader.Instaloader):
     SESSOES_DIR = Path(".insta_sessions")
@@ -90,7 +76,7 @@ def baixar_stories(L: instaloader.Instaloader, logo_img: Image.Image):
             perfil = instaloader.Profile.from_username(L.context, username)
             print(f"\n👤 Usuário: {perfil.username} (id {perfil.userid})")
 
-            user_dir = PASTA_ORIG / perfil.username
+            user_dir = PASTA_ORIG
             user_dir.mkdir(parents=True, exist_ok=True)
 
             for story in L.get_stories(userids=[perfil.userid]):
@@ -102,16 +88,19 @@ def baixar_stories(L: instaloader.Instaloader, logo_img: Image.Image):
                     # identifica último arquivo baixado
                     arquivos = [f for f in user_dir.iterdir() if f.suffix.lower() in [".jpg",".jpeg",".png",".webp",".mp4"]]
                     if not arquivos:
+                        print(f"⚠️ Nenhum arquivo encontrado para {username}.")
                         continue
                     arquivo = sorted(arquivos, key=lambda p: p.stat().st_mtime)[-1]
 
+                    saida_processada = ""
+
                     if item.is_video:
-                        saida = PASTA_SAIDA / arquivo.name
+                        saida = PASTA_ORIG / arquivo.name                        
                         arquivo.replace(saida)
                         print(f"🎬 Vídeo baixado: {saida.name}")
                     else:
-                        saida = PASTA_SAIDA / f"{item.owner_username}_{arquivo.stem}.png"
-                        aplicar_logo(arquivo, logo_img, saida)
+                        saida = PASTA_ORIG / f"{item.owner_username}_{arquivo.stem}.png"
+                        print(f"🖼️ Imagem baixada: {saida.name}")
 
         except Exception as e:
             print(f"⚠️ Erro ao processar {username}: {e}")
@@ -136,6 +125,8 @@ def main():
 
     print("🚀 Iniciando download de stories dos usuários…")
     baixar_stories(L, logo_img)
+
+
 
     print("\n🎉 Concluído! Arquivos finais em:", PASTA_SAIDA.resolve())
 

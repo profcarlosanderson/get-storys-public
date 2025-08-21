@@ -1,0 +1,8 @@
+certifi==2025.8.3
+charset-normalizer==3.4.3
+idna==3.10
+instaloader==4.13.2
+pillow==10.4.0
+python-dotenv==1.0.1
+requests==2.32.4
+urllib3==2.2.3
