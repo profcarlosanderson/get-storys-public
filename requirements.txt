@@ -1,8 +1,15 @@
 certifi==2025.8.3
 charset-normalizer==3.4.3
+decorator==4.4.2
 idna==3.10
+imageio==2.35.1
+imageio-ffmpeg==0.5.1
 instaloader==4.13.2
+moviepy==1.0.3
+numpy==1.24.4
 pillow==10.4.0
+proglog==0.1.12
 python-dotenv==1.0.1
 requests==2.32.4
+tqdm==4.67.1
 urllib3==2.2.3
